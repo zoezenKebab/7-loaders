@@ -10,7 +10,7 @@ to use, fill a txt (or ask your friendly libreOffice Calc to do it for you) with
 		"NAME_OF_WONDER"/"SIDE_OF_WONDER"/"WONDER_POINTS"/"MONEY_POINTS"/"ARMY_POINTS"/"BLUE_POINTS"/"YELLOW_POINTS"/"GREEN_POINTS"/"PURPLE_POINTS"
 		etc.. for each player
     
-  -base format to visualize multiple single games a once is :
+  -base format to visualize multiple single games at once is :
 	
 		"GAME_ONE".
 		"GAME_TWO".
