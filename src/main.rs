@@ -1,140 +1,140 @@
-use std::{env, fmt, io};
-use std::fmt::Debug;
-use std::fs;
-use colored::*;
+use std::{fs, io};
+use seven_loaders::*;
+use dialoguer::{Confirm, Input, Select};
 
 fn main() {
 
-        //println!{"{}", "█████████████████░░░░░░░░░░░ 43%".truecolor(125, 230, 125)};
-        //println!{"{}", "████████████░░░░░░░░░░░░░░░░ 28%".truecolor(125, 125, 230)};
-        //println!{"{}", "███████░░░░░░░░░░░░░░░░░░░░░ 28%".truecolor(230, 125, 125)};
-        let file_path: String = ask_for_input("enter a valid file location".to_string());
+        let mut file_path: String = r"C:\Users\zenon\Desktop\valid save file.txt".to_string();
+
+        let use_custom_path = Confirm::new()
+            .with_prompt("use custom path ?")
+            .interact()
+            .unwrap();
+
+        if use_custom_path {
+                let custom_path = Input::new()
+                    .with_prompt("enter custom path")
+                    .interact_text()
+                    .unwrap();
+                file_path = custom_path
+        }
 
         let content = fs::read_to_string(file_path.trim())
             .expect("failed to load file");
 
-        let games_dict: Vec<&str> = content.split(".").collect();
+        //convert the string txt into a vec of games struct
+        let dict = parse_txt(content);
 
-        let mut games_dict_vec: Vec<Game> = vec![];
-        let mut player_score_vec: Vec<&str> = vec![];
+        println!("number of games compiled : {:?}", dict.len());
 
-        eprint!("loading");
-        for single_game in &games_dict {
-            let mut player_score_parsed: Vec<Score> = vec![];
-            player_score_vec = single_game.split("\r\n").collect();
+        main_menu(dict)
 
-            let mut num_players: i8 = 0;
-            //parse the player score strings
-            for column in &player_score_vec {
-                if column.is_empty() { continue }
-                num_players += 1;
-                let cells: Vec<&str> = column.split("/").collect();
+}
 
-                eprint!(".");
-                let mut player_score = Score {
-                    name: cells[0].parse().unwrap(),
-                    face: cells[1].parse().unwrap(),
-                    mer_pts: cells[2].parse().unwrap(),
-                    arg_pts: cells[3].parse().unwrap(),
-                    mil_pts: cells[4].parse().unwrap(),
-                    ble_pts: cells[5].parse().unwrap(),
-                    jau_pts: cells[6].parse().unwrap(),
-                    ver_pts: cells[7].parse().unwrap(),
-                    vio_pts: cells[8].parse().unwrap(),
-                    sum_pts: 0,
+fn main_menu(bulk : Vec<Game>) {
+        let main_stats_menu = vec!["bulk stats", "wonder stats", "global stats", "quit"];
+        loop {
+                let selection = select_menu(&main_stats_menu, "select a stats menu");
+                match selection {
+                        0 => {
+                                println!("{:#?}", bulk);
+                                continue
+                        }
+                        1 => {
+                                wonder_stats(&bulk)
 
-                };
-
-                player_score.sum_pts = sum(&player_score);
-                player_score_parsed.push(player_score);
-            }
-            let game_struct = Game {
-                players: num_players,
-                winner: "None".to_string(),
-                individual_score: player_score_parsed,
-            };
-            games_dict_vec.push(game_struct)
+                        }
+                        2 => {
+                                println!("not yet implemented !");
+                                continue
+                        }
+                        3 => {
+                                break
+                        }
+                        _ => {
+                                println!("you're not supposed to see that");
+                                continue
+                        }
+                }
         }
-
-        println!("done !");
-        println!("{:#?}", games_dict_vec);
-        println!("number of games compiled : {:?}", games_dict_vec.len());
-
-        if ask_for_input("enter restart to restart".to_string()) == "restart".to_string() { main() }
-
-}
-fn ask_for_input(mut prompt : String) -> String {
-    if prompt == "default".to_string() {
-        prompt = "waiting for input".to_string()
-    }
-    println!("{prompt}");
-
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("failed to read line");
-    println!("user typed : {}", &input);
-    return input.trim().to_string()
 }
 
+fn wonder_stats(bulk : &Vec<Game>) {
+        let wonder_code =vec!["ALEX", "ARTE", "BABY", "GIZE", "HALI", "RHOD", "ZEUS"];
+        for wdr in wonder_code {
+                average_stats(find_wonder(bulk, wdr.clone().to_string()), wdr.to_string())
+        }
+        println!("press a key to continue");
+        let _guess = io::stdin()
+            .read_line(&mut "".to_string());
 
+}
 
-struct Score {
-    name : String,
-    face : String,
-    mer_pts : i8,
-    arg_pts : i8,
-    mil_pts : i8,
-    ble_pts : i8,
-    jau_pts : i8,
-    ver_pts : i8,
-    vio_pts : i8,
-    sum_pts : i8,
+fn select_menu(menu : &Vec<&str>, prmt : &str) -> usize {
+        return Select::new()
+            .with_prompt(prmt)
+            .items(&menu)
+            .interact()
+            .unwrap()
+
 }
 
 
-fn sum(score : &Score) -> i8 {
-    let tot = score.mer_pts +
-        score.arg_pts +
-        score.mil_pts +
-        score.ble_pts +
-        score.jau_pts +
-        score.ver_pts +
-        score.vio_pts;
+fn average_stats(focus : Vec<&Score>, name : String) {
+        let mut tot = vec![0i16; 9];
+        let mut face: Vec<String> = vec![];
+        let mut avg = AvgScore::new_empty();
+        for part in &focus {
+                if part.face == "NUIT".to_string() { face.push(part.face.clone()); }
+                tot[1] += part.mer_pts as i16;
+                tot[2] += part.arg_pts as i16;
+                tot[3] += part.mil_pts as i16;
+                tot[4] += part.ble_pts as i16;
+                tot[5] += part.jau_pts as i16;
+                tot[6] += part.ver_pts as i16;
+                tot[7] += part.vio_pts as i16;
+                tot[8] += part.sum_pts as i16;
+        }
+        tot[0] = face.len() as i16;
+        //println!("{}", tot[0]);
+        let divider: f32 = focus.len() as f32;
+        avg.face_avg = tot[0] as f32 / divider;
+        avg.mer_avg = tot[1] as f32 / divider;
+        avg.arg_avg = tot[2] as f32 / divider;
+        avg.mil_avg = tot[3] as f32 / divider;
+        avg.ble_avg = tot[4] as f32 / divider;
+        avg.jau_avg = tot[5] as f32 / divider;
+        avg.ver_avg = tot[6] as f32 / divider;
+        avg.vio_avg = tot[7] as f32 / divider;
+        avg.tot_avg = tot[8] as f32 / divider;
 
-    return tot
+        println!("{}",name);
+        println!("average over {:#?} games", divider);
+        let mut color_idx = 0;
+        for value in avg.as_array() {
+                if color_idx == 0 {
+                        AvgScore::pretty_print(value * 100f32, color_idx)
+                }
+                else {
+                        AvgScore::pretty_print(value, color_idx)
+                }
+                color_idx += 1
+        }
+        println!("      ")
 }
 
-impl Debug for Score {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Score")
-            .field("name", &self.name)
-            .field("face", &self.face)
-            .field("mer_pts", &self.mer_pts)
-            .field("arg_pts", &self.arg_pts)
-            .field("mil_pts", &self.mil_pts)
-            .field("ble_pts", &self.ble_pts)
-            .field("jau_pts", &self.jau_pts)
-            .field("ver_pts", &self.ver_pts)
-            .field("vio_pts", &self.vio_pts)
-            .field("sum_pts", &self.sum_pts)
-            .finish()
-    }
-}
-
-
-struct Game {
-    players: i8,
-    winner: String,
-    individual_score: Vec<Score>,
-}
-
-impl Debug for Game {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Game")
-            .field("players", &self.players)
-            .field("winner", &self.winner)
-            .field("players score", &self.individual_score)
-            .finish()
-    }
+fn find_wonder(bulk : &Vec<Game>, focus : String) -> Vec<&Score> {
+        let mut raw_scores : Vec<&Score> = vec![];
+        let mut wdr_focus : Vec<&Score> = vec![];
+        for single_game in bulk {
+                for score in &single_game.individual_score {
+                        raw_scores.push(score)
+                }
+        }
+        for single_score in raw_scores {
+                if single_score.name == focus {
+                        wdr_focus.push(single_score)
+                }
+        }
+        return wdr_focus
 }
